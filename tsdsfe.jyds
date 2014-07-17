@@ -44,7 +44,11 @@ try:
    from org.das2.datum import EnumerationUnits
    from org.virbo.dataset import DDataSet
    if ( 1 ):
-      ll= labels.split(',') 
+      print 'labels', labels
+      if ( len(labels)==0 ):
+          ll= parameters.split(',')  
+      else:
+          ll= labels.split(',') 
       eu= EnumerationUnits.create('default')
       lenll= len(ll) 
       llds= DDataSet.createRank1(lenll)
