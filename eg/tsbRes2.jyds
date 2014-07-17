@@ -1,0 +1,33 @@
+# demo resolution cache tag.  If a Jython script supports time series browse, then the data source returns a 
+# data set spanning this range.  
+
+tr= getParam( 'timerange', '1986', 'timerange to load' )
+
+drtr= DatumRangeUtil.parseTimeRange(tr)
+
+cad= dataset( drtr.width().divide(1000) )
+
+print 'pixel resolution is %s' % cad.toString()
+
+if ( cad.lt( '1 min') ):
+    ds= getDataSet( 'http://cdaweb.gsfc.nasa.gov/data/omni/hro_1min/$Y/omni_hro_1min_$Y$m01_v$v.cdf?AE_INDEX', tr )
+    cad= dataset('1 min')
+elif ( cad.lt( '5 min' ) ):
+    ds= getDataSet( 'http://cdaweb.gsfc.nasa.gov/data/omni/hro_1min/$Y/omni_hro_1min_$Y$m01_v$v.cdf?AE_INDEX', tr )        
+    cad= dataset('5 min')
+else:
+    ds= getDataSet( 'http://cdaweb.gsfc.nasa.gov/data/omni/hourly/$Y/omni2_h0_mrg1hr_$Y$(m,span=6)01_v$v.cdf?AE', tr )
+    cad= dataset('1 hr')
+
+print 'reading data for cad=%s' % cad.toString()
+
+from org.das2.datum import CacheTag
+from org.virbo.dataset import DataSetUtil
+ct= CacheTag( drtr.min(), drtr.max(), DataSetUtil.asDatum(cad) )
+
+ttag= ds.property( QDataSet.DEPEND_0 )
+ttag= putProperty( ttag, QDataSet.CACHE_TAG, ct )
+
+result= link( ttag, ds )
+
+

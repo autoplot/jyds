@@ -1,0 +1,22 @@
+# this demonstrates how scripts can use the TimeSeriesBrowse capability.
+# Any script with getParam('timerange') has this capability, and it will
+# be added when the jython data source is loaded.
+#
+# This returns sin( hours since 2000 )
+
+p1= getParam( 'timerange', '2011-01-01', 'timerange to load' )
+p2= getParam( 'shiftHour', 0, 'shift signal this many hours' )
+
+tr= DatumRangeUtil.parseTimeRange(p1)
+
+x= linspace( tr.min().doubleValue(Units.t2000), tr.max().doubleValue(Units.t2000), 1000 )
+x.putProperty(QDataSet.UNITS,Units.t2000)
+
+t0= Units.t2000.createDatum(0)
+
+# work around bugs existing in v2011a_2. https://sourceforge.net/tracker/?func=detail&aid=3466875&group_id=199733&atid=970682
+dd= (x-t0)/'3600 s' 
+dd.putProperty( QDataSet.UNITS, None )
+dd.putProperty( QDataSet.TITLE, 'Hello' )
+
+result= link( x,  sin( dd - p2 ) )

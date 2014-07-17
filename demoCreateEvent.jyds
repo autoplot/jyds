@@ -1,0 +1,10 @@
+# demo new code to more easily produce events datasets.  Note
+# the default behavior is to draw the events with some transparency, so that
+# overlaps are indicated.  
+
+ds= None  # initialize symbol ds
+ds= createEvent( ds, '2012-03-01T12:00/13:00', 0xFF0000, 'red event E!S!US!R!DN' )
+ds= createEvent( ds, '2012-03-02T13:00/2012-03-03T01:00', 0x00FF00, 'green event' )
+ds= createEvent( ds, '2012-03-03T00:00/12:00', 0x0000FF, 'blue event' )
+
+result= ds

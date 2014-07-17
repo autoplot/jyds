@@ -1,0 +1,12 @@
+# demonstrate old routine for making Flux(L,T) spectrograms
+
+tr= getParam( 'timerange', '1992-03', 'parameter timerange (default=1992-03-08)' )
+feio= getDataSet('vap+cdf:ftp://ftp.virbo.org/LANL/LANL1991/SOPA+ESP/H0/LANL_1991_080_H0_SOPA_ESP_$Y$m$d_V...cdf?FEIO&timerange=%s' % tr)
+l= getDataSet('vap+cdf:ftp://ftp.virbo.org/LANL/LANL1991/SOPA+ESP/H0/LANL_1991_080_H0_SOPA_ESP_$Y$m$d_V...cdf?L&timerange=%s' % tr )
+
+lgrid= linspace( 6.5, 7.5, 20 )
+
+from org.virbo.dsutil import LSpec
+
+lspec= LSpec.rebin( l, feio, lgrid )
+plot(lspec)  # Nice demo of where cadence check doens't work.

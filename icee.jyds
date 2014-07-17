@@ -1,0 +1,73 @@
+# purpose: Reads ICEE B spectrogram from PDS archive at /opt/project/isee.
+
+type= getParam( 'type', 'e' )
+
+dir= '/opt/project/isee/ice/g_z/ice/plawav/'
+if ( type=='e' ):
+   dir= dir + 'e_field/'
+elif ( type=='e_star' ):
+   dir= dir + 'e_field/'
+elif ( type=='b' ):
+   dir= dir + 'b_field/'
+else:
+   stop
+
+day='y85m9d11/'
+
+files= list( dir+day+'*.tab' )
+
+dsall= None
+
+tp= TimeParser.create('y%ym%1md%d/')
+
+base= tp.parse(day).getTimeDatum()
+u= Units.t1970
+base= base.convertTo( u )
+
+def midnightKludge( d ):
+   print d
+   if ( d[0] > d[-1] ):
+      d= d+0.0
+      r= where( d[1:].lt(d[:-1]) )
+      idx= r[0]+1
+      nd= d[idx:] + 86400000
+      d[idx:]= nd
+   return d
+
+if ( type=='e' ):
+   en= [ 17.8, 31.6, 56.2, 100, 178, 316, 562, 1000, 1780, 3160, 5620, 
+      10000, 17800, 31600, 56200, 100000 ]
+   arg= 'rank2=field1-field16'
+elif ( type=='e_star' ):
+   en= [ 17.8, 31.6, 56.2, 100, 178, 316, 562, 1000, 1780, 3160, 5620, 
+      10000, 17800, 31600, 56200, 100000 ]
+   arg= 'rank2=field1-field16'
+elif ( type=='b' ):
+   en= [ 17.8, 31.6, 56.2, 100, 178, 316, 562, 1000 ]
+   arg= 'rank2=field1-field8'
+else:
+   stop
+
+for i in files:
+  ds= getDataSet('vap+dat:file://'+dir+day+i+'?depend0=field0&'+arg )
+  dep0= ds.property( QDataSet.DEPEND_0 )
+
+  dep0= midnightKludge(dep0)
+
+  dep0= base.doubleValue(u) + dep0 / 1000.
+  dep0.putProperty( QDataSet.UNITS, u )
+
+  ds.putProperty( QDataSet.DEPEND_0, dep0 )
+  dsall= concatenate( dsall, ds )
+
+if ( type=='e_star' ): 
+   dep0= dsall.property( QDataSet.DEPEND_0 )
+   fact= outerProduct( ones( dsall.length() ), coerce( en )  )
+   print dsall, fact
+   dsall= dsall * dsall * fact
+   dsall.putProperty( QDataSet.DEPEND_0, dep0 )
+
+dsall.putProperty( QDataSet.DEPEND_1, coerce( en ) )
+if ( type!='e_star' ): dsall.putProperty( QDataSet.SCALE_TYPE, 'log' )
+
+data= dsall

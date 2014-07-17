@@ -1,0 +1,4 @@
+ds1= getDataSet( 'http://www.autoplot.org/data/image/Capture_00158.jpg?channel=greyscale' )
+ds2= getDataSet( 'http://www.autoplot.org/data/image/Capture_00159.jpg?channel=greyscale' )
+result= abs( ds2- ds1 )
+

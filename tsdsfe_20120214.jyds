@@ -1,0 +1,23 @@
+tr         = getParam( 'timerange', '1997-08-26//1997-09-05', 'timerange to load' )
+catalog    = getParam( 'catalog', 'sscweb', 'catalog' )
+dataset    = getParam( 'dataset', 'ace', 'dataset' )
+parameters = getParam( 'parameters', 'X_GEI', 'parameters' )
+start      = getParam( 'start', '1997-08-26', 'start' )
+stop       = getParam( 'stop', '1997-09-01', 'stop' )
+server     = getParam( 'server', 'http://tsds.net/tsdsdev/tsdsfe2' )
+units      = getParam( 'units', 'R_E' )
+labels     = getParam( 'labels', '' )
+title      = getParam( 'title', catalog + '/' + dataset + '/' + parameters )
+
+tf    = TimeParser.create('$Y-$m-$d')
+drtr  = DatumRangeUtil.parseTimeRange(tr)
+start = tf.format( drtr.min(), None )
+stop  = tf.format( drtr.max(), None )
+
+#f = downloadResourceAsTempFile(URL(server + "?" + "catalog=" + catalog + "&dataset=" + dataset + "&parameters=" + parameters + "&start=" + start + "&stop=" + stop + "&out=asc&stream=true",monitor) 
+
+uri = server + "?" + "catalog=" + catalog + "&dataset=" + dataset + "&parameters=" + parameters + "&start=" + start + "&stop=" + stop + "&out=asc&stream=true&filter=format_time(yyyy'-'MM'-'dd'T'HH':'mm':'SS.sss)"
+f = downloadResourceAsTempFile(URL(uri),monitor) 
+
+result= getDataSet( 'vap+dat:'+f.toString() )
+result.putProperty( QDataSet.TITLE, title )

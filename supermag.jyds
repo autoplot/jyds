@@ -1,0 +1,97 @@
+YYYYMMDD = '19800101'
+#MAG      = 'BRW'
+user     = 'weigel'
+
+station= getParam( 'station', 'BRW', 'Three-letter IAGA code of station')
+#tr= getParam( 'timerange', '19800101', 'timerange to support time series browse' )
+tr= getParam( '', '19800101', 'timerange to support time series browse' )
+timerange= DatumRangeUtil.parseTimeRange(tr)
+tf= TimeParser.create("$Y$m$d")
+
+df= tf.format( timerange.min(), None )  #TODO: 1 parameter only coming
+dt= tf.format( timerange.max(), None )
+
+# Create builders for the data and timetags, allocate 1440 records initially.
+ttags = DataSetBuilder( 1, 1440 )   
+X     = DataSetBuilder( 1, 1440 )
+Y     = DataSetBuilder( 1, 1440 )
+Z     = DataSetBuilder( 1, 1440 )
+
+t= timerange.min()
+day= Units.days.createDatum(1)
+
+i=0
+ndayLimit=3
+iday=0
+
+while ( timerange.contains(t) and iday<ndayLimit ): 
+  iday= iday+1
+
+  preURI   = 'http://SuperMAG.uib.no/cgi-bin/cgiwrap.cgi?command=../script/download.mag&cli='
+  #preURI   = 'http://supermag.jhuapl.edu/cgi-bin/cgiwrap.cgi?command=../script/download.mag&cli='
+  postURI  = '+-ncol+ff333333+-smlcol+ff666666+-smucol+ff999999+-index+-imfgsm+-ymin+-800+-ymax+200' 
+
+  fullURI  = preURI + user + '+' + tf.format(t,None) + '+00%3A00+24%3A00+-s+' + station + postURI
+
+  print  'loading %s... ' % fullURI
+
+  monitor.setProgressMessage( "loading %s... " % fullURI )
+  file= downloadResourceAsTempFile( URL(fullURI),monitor).toString()
+  monitor.setProgressMessage('done downloading')
+
+  # Read file from disk
+  fp= open( file, "r" )
+  monitor.setProgressMessage( "Reading" + file )
+
+  # Import the DataSetBuilder class that is used to build up the dataset.
+  from org.virbo.dsutil import DataSetBuilder
+
+  line= fp.readline();
+  while ( len(line)==0 or line[0]!='=' ):
+    line= fp.readline()
+
+  tp= TimeParser.create('$Y $m $d $H $M $S')
+
+  evenodd= 0
+  for line in fp:
+    if ( evenodd==0 ):
+      tt= tp.parse(line).getTimeDatum() 
+      ttags.putValue(i,tt.doubleValue(Units.us2000) )
+    else:
+      ss= line.split('\t')
+      X.putValue(i,java.lang.Double.parseDouble(ss[1]) )
+      Y.putValue(i,java.lang.Double.parseDouble(ss[2]) )
+      Z.putValue(i,java.lang.Double.parseDouble(ss[3]) )
+      i=i+1
+    evenodd= 1-evenodd
+
+  monitor.setProgressMessage( "done reading" )
+
+  t= t.add( day )
+
+X.putProperty( QDataSet.NAME, 'B_x' )
+X.putProperty( QDataSet.TITLE, 'B_x' )
+
+Y.putProperty( QDataSet.NAME, 'B_y' )
+Y.putProperty( QDataSet.TITLE, 'B_y' )
+
+Z.putProperty( QDataSet.NAME, 'B_z' )
+Z.putProperty( QDataSet.TITLE, 'B_z' )
+
+# indicate the times are seconds since 2000-01-01T00:00.
+ttags.putProperty( QDataSet.UNITS, Units.us2000 ) 
+
+times=  ttags.getDataSet()
+# connect the timetags to the data.
+X.putProperty( QDataSet.DEPEND_0, times ) 
+Y.putProperty( QDataSet.DEPEND_0, times ) 
+Z.putProperty( QDataSet.DEPEND_0, times )
+
+X= X.getDataSet()
+Y= Y.getDataSet()
+Z= Z.getDataSet()
+vec= bundle( bundle( X, Y ), Z )
+vec.putProperty( QDataSet.DEPEND_0, times )
+vec.putProperty( QDataSet.RENDER_TYPE, 'series' )
+
+data= vec

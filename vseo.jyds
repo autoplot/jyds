@@ -1,0 +1,32 @@
+# param= getParam('param','xx','The parameter to plot')
+tr= getParam( 'timerange', '19910621', 'The timerange' )
+
+timerange= DatumRangeUtil.parseTimeRange(tr)
+tf= TimeParser.create("$Y-$m-$dT$H:$M:$S")
+
+df= tf.format( timerange.min(), None ) 
+dt= tf.format( timerange.max(), None )
+
+url= 'http://vseo.space.swri.edu/sddas/GetData.cgi?project=SPACERAD&mission=CRRES&experiment=AFGL-701-11&instrument=LOMICS&virtual=LOID&start_time=%s&end_time=%s' % ( df, dt )
+print url
+fil= org.virbo.datasource.DataSetURI.downloadResourceAsTempFile(URL(url),monitor)
+
+ind= getParam( 'ds', 0, 'The index of the dataset to read 0,1,2,3,4,5' )
+tab= getDataSet('vap+dat:%s?depend0=field0&column=field%d' % (fil, ind+2) )
+
+data= tab
+
+data.putProperty (QDataSet.TITLE, "CRRES LOMICS from http://vseo.space.swri.edu/")
+
+if (ind == 0):
+  data.putProperty (QDataSet.LABEL, "H+ Density [#/cc]")
+elif (ind == 1):
+  data.putProperty (QDataSet.LABEL, "He+ Density [#/cc]")
+elif (ind == 2):
+  data.putProperty (QDataSet.LABEL, "He++ Density [#/cc]")
+elif (ind == 3):
+  data.putProperty (QDataSet.LABEL, "O+ Density [#/cc]")
+elif (ind == 4):
+  data.putProperty (QDataSet.LABEL, "O++ Density [#/cc]")
+elif (ind == 5):
+  data.putProperty (QDataSet.LABEL, "Total Ion Density [#/cc]")

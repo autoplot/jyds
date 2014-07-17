@@ -1,0 +1,13 @@
+param= getParam('param','amie_ae','The parameter to plot')
+tr= getParam( 'timerange', '19910101', 'The timerange' )
+
+timerange= DatumRangeUtil.parseTimeRange(tr)
+tf= TimeParser.create("$Y$m$d")
+
+df= tf.format( timerange.min(), None )  #TODO: 1 parameter only coming
+dt= tf.format( timerange.max(), None )
+
+url= 'http://spidr.ngdc.noaa.gov/spidr/servlet/GetData?format=csv&dateFrom=%s&dateTo=%s&param=%s' % ( df, dt, param )
+fil= org.virbo.datasource.DataSetURI.downloadResourceAsTempFile(URL(url),monitor)
+data= getDataSet('vap+dat:%s?depend0=field0&column=field1' % fil )
+data.putProperty( QDataSet.LABEL, param )
