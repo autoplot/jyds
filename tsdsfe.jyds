@@ -1,7 +1,7 @@
 # title: tsds client
 # label: tsds client
 tr         = getParam( 'timerange', '1997-08-26//1997-09-05', 'timerange to load' )
-catalog    = getParam( 'catalog', 'sscweb', 'catalog' )
+catalog    = getParam( 'catalog', 'SSCWeb', 'catalog' )
 dataset    = getParam( 'dataset', 'ace', 'dataset' )
 parameters = getParam( 'parameters', 'X_GEI', 'parameters' )
 start      = getParam( 'start', '1997-08-26', 'start' )
