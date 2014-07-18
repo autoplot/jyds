@@ -25,7 +25,7 @@ stop  = tf.format( drtr.max(), None )
 
 surl = server + "?" + "catalog=" + catalog + "&dataset=" + dataset + "&parameters=" + parameters + "&start=" + start + "&stop=" + stop + "&outformat=1&stream=true&usecache="+usecache
 print surl
-stop
+
 # note the server may provide a valid but html response.
 
 f = downloadResourceAsTempFile( URL( surl ), monitor ) 
