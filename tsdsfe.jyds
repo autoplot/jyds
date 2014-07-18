@@ -18,8 +18,8 @@ if ( title=='def' ):
 print 'v20130217_0703'
 #print parameters
 
-tf    = TimeParser.create('$Y-$m-$d')
 drtr  = DatumRangeUtil.parseTimeRange(tr)
+tf    = TimeParser.create('$Y-$m-$d')
 start = tf.format( drtr.min(), None )
 stop  = tf.format( drtr.max(), None )
 
