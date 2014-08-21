@@ -4,6 +4,31 @@
 sc= getParam( 'sc', 'ace', 'spacecraft', ['ace','aim','apex'] )
 tr= getParam( 'timerange', '2008-001' )
 coord= getParam( 'coord', 'GEO', 'coordinate system', [ 'GEO', 'GSM' ] )
+view= getParam( 'view', 'XY', 'coordinates and timeseries', [ 'XY', 'XZ', 'YZ', 'X(T)', 'Y(T)', 'Z(T)', 'X(T)Y(T)', 'X(T)Z(T)', 'Y(T)Z(T)', 'X(T)Y(T)Z(T)' ] )
 
-xxyy= getDataSet( 'https://raw.githubusercontent.com/autoplot/jyds/master/tsdsfe.jyds?timerange=%s&dataset=%s&parameters=X_%s,Y_%s' % ( tr, sc, coord, coord ) )
-result= link( xxyy[:,0], xxyy[:,1] )
+
+xxyy= getDataSet( 'https://raw.githubusercontent.com/autoplot/jyds/master/tsdsfe.jyds?timerange=%s&dataset=%s&parameters=X_%s,Y_%s,Z_%s' % ( tr, sc, coord, coord, coord ) )
+if ( view=='XY' ):
+    result= link( xxyy[:,0], xxyy[:,1] )
+elif ( view=='XZ'):
+    result= link( xxyy[:,0], xxyy[:,2] )
+elif ( view=='YZ'):
+    result= link( xxyy[:,1], xxyy[:,2] )
+elif ( view=='X(T)'):
+    result= xxyy[:,0]
+elif ( view=='Y(T)'):
+    result= xxyy[:,1]
+elif ( view=='Z(T)'):
+    result= xxyy[:,2]
+elif ( view=='X(T)Y(T)'):
+    result= bundle( xxyy[:,0], xxyy[:,1] )
+    result= putProperty( result,QDataSet.DEPEND_0,xxyy.property(QDataSet.DEPEND_0) )  # TODO: it's a little unfortunate that we have to kludge this.
+elif ( view=='X(T)Z(T)'):
+    result= bundle( xxyy[:,0], xxyy[:,2] )
+    result= putProperty( result,QDataSet.DEPEND_0,xxyy.property(QDataSet.DEPEND_0) )    
+elif ( view=='Y(T)Z(T)'):
+    result= bundle( xxyy[:,1], xxyy[:,2] )
+    result= putProperty( result,QDataSet.DEPEND_0,xxyy.property(QDataSet.DEPEND_0) )    
+elif ( view=='X(T)Y(T)Z(T)'):
+    result= bundle( xxyy[:,0], xxyy[:,1], xxyy[:,2] )
+    result= putProperty( result,QDataSet.DEPEND_0,xxyy.property(QDataSet.DEPEND_0) )    
