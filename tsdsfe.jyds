@@ -20,7 +20,7 @@ process= getParam( 'process', '', 'process to apply to the data', ['','histogram
 
 if ( title=='def' ):
   title= 'catalog: ' + catalog + ' | dataset: ' + dataset #+ ' | parameters: ' + parameters
-print 'v20150720_0606'
+#print 'v20150720_0606'
 #print parameters
 
 drtr  = DatumRangeUtil.parseTimeRange(tr)
@@ -35,7 +35,7 @@ surl = server + "?" + "catalog=" + catalog + "&dataset=" + dataset + "&parameter
 #print surl
 
 f = downloadResourceAsTempFile( URL( surl ), monitor ) 
-print f
+#print f
 
 try:
    #print 'labels', labels
