@@ -1,22 +1,33 @@
 # demo resolution cache tag.  If a Jython script supports time series browse, then the data source returns a 
 # data set spanning this range.  When it also supports resolution, can it return a cache tag to get 
-# autoplot to come back?
+# autoplot to come back?  This also now only returns data on 2012-04-18, so that experiments with 
+# missing data are supported.
 
 tr= getParam( 'timerange', '2012-04-18', 'timerange to load' )
 
 drtr= DatumRangeUtil.parseTimeRange(tr)
+if ( drtr.intersects(datumRange('2012-04-18') ) ):
+    drtr= drtr.intersection(datumRange('2012-04-18'))
+else:
+    drtr= datumRange([drtr.min(),drtr.min()])
 
-cad= drtr.width().divide(1000)
-
-print drtr
-print cad
-
-tds= timegen( drtr.min().toString(), cad.toString(), 1000 )
-ds= sin( convertUnitsTo( tds-dataset('2000-01-01T00:00'), Units.seconds ) )
-
-from org.das2.datum import CacheTag
-ct= CacheTag( drtr.min(), drtr.max(), cad )
-tds= putProperty( tds, QDataSet.CACHE_TAG, ct )
-
-result= link( tds, ds )
-
+if ( drtr.width().value()==0 ):
+    print 'out of range'
+    #import org.das2.dataset.NoDataInIntervalException
+    #raise org.das2.dataset.NoDataInIntervalException("outside range") # doesn't work
+    result= None
+else:
+    cad= drtr.width().divide(1000)
+    
+    print drtr
+    print cad
+    
+    tds= timegen( drtr.min().toString(), cad.toString(), 1000 )
+    ds= sin( convertUnitsTo( tds-dataset('2000-01-01T00:00'), Units.seconds ) )
+    
+    from org.das2.datum import CacheTag
+    ct= CacheTag( drtr.min(), drtr.max(), cad )
+    tds= putProperty( tds, QDataSet.CACHE_TAG, ct )
+    
+    result= link( tds, ds )
+    
