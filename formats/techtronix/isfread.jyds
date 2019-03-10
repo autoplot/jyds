@@ -1,0 +1,174 @@
+import sys
+import os.path
+import re
+
+resourceURI= getParam( 'resourceURI', '/home/jbf/project/juice/u/zach/20190115/tek0000CH1.isf', 'Techtronix isf file' )
+
+# WFMPRE:NR_PT 1000 is absent
+# WFMOUTPRE:BYT_NR 1 or WFMO:BYT_N 1 from socket instead of
+# WFMPRE:BYT_NR 1 or WFMP:BYT_N 1 from isf file
+
+tek_header = {
+    ":CURVE":        re.compile("^:CURVE?$"),
+    ":WFMPRE:BYT_NR":re.compile("^:WFMP(RE)?:BYT_NR?$"),
+    #":WFMPRE:BYT_NR":re.compile("^:WFMO?(UT)?P?(RE)?:BYT_NR?$"),
+    ":WFMPRE:NR_PT": re.compile("^:WFMP(RE)?:NR_PT?$"),
+    "ASC_FMT":      re.compile("^ASC_F(MT)?$"),
+    "BIT_NR":       re.compile("^BIT_NR?$"),
+    "BN_FMT":       re.compile("^BN_F(MT)?$"),
+    "BYT_OR":       re.compile("^BYT_OR?$"),
+    "CENTERFREQUENCY": re.compile("^CENTERFREQ(UENCY)?$"),
+    "DOMAIN":       re.compile("^DOM(AIN)?$"),
+    "ENCDG":        re.compile("^ENC(DG)?$"),
+    "HDELAY":       re.compile("^HDELAY$"),
+    "HSCALE":       re.compile("^HSCALE$"),
+    "NR_PT":        re.compile("^NR_PT?$"),
+    "PT_FMT":       re.compile("^PT_F(MT)?$"),
+    "PT_OFF":       re.compile("^PT_O(FF)?$"),
+    "PT_ORDER":     re.compile("^PT_OR(DER)?$"),
+    "REFLEVEL":     re.compile("^REFLE(VEL)?$"),
+    "SPAN":         re.compile("^SPAN$"),
+    "VOFFSET":      re.compile("^VOFFSET$"),
+    "VPOS":         re.compile("^VPOS$"),
+    "VSCALE":       re.compile("^VSCALE$"),
+    "WFID":         re.compile("^WFID?$"),
+    "WFMTYPE":      re.compile("^WFMTYP(E)?$"),
+    "XINCR":        re.compile("^XIN(CR)?$"),
+    "XUNIT":        re.compile("^XUN(IT)?$"),
+    "XZERO":        re.compile("^XZE(RO)?$"),
+    "YMULT":        re.compile("^YMU(LT)?$"),
+    "YOFF":         re.compile("^YOFF?$"),
+    "YUNIT":        re.compile("^YUN(IT)?$"),
+    "YZERO":        re.compile("^YZE(RO)?$")
+}
+
+def parse_curve(isf_file):
+    """
+    Reads one tektronix .isf file and returns a dictionary containing
+    all tags as keys. The actual data is stored in the key "data".
+    """
+    if ( not isf_file.endswith(".isf") ):
+        raise ValueError("File type unkown.")
+    ifile= open(isf_file, 'rb')
+    if True:
+        # read header
+        header = {}
+        while True:
+            name = _read_chunk(ifile, " ")
+            if not tek_header[":CURVE"].search(name):
+                value = _read_chunk(ifile, ";")
+                k = ""
+                for x in tek_header:
+                    if tek_header[x].search(name):
+                        assert x not in header
+                        header[x] = value
+                        k = name
+                if not k:
+                    sys.stderr.write("%s is not a predefined key\n"%name)
+                    #sys.exit(127)
+            else:
+                # ":CURVE " is the last tag of the header, followed by
+                # '#XYYY' with X being the number of bytes of YYY.
+                # YYY is the length of the datastream following in bytes.
+                value = ifile.read(2)
+                value = value.decode("ascii")
+                y_str = ifile.read(int(value[-1]))
+                y_str = y_str.decode("ascii")
+                value += y_str
+
+                # the number of bytes might be present with or without the
+                # preceding header ":WFMPRE:"
+                nobytes = header.get( "BYT_NR",
+                                      header.get(":WFMPRE:BYT_NR", "0") )
+                assert int(y_str) == int(header["NR_PT"]) * int(nobytes)
+                header[":CURVE"] = value  # force consistent key
+                currentposition = ifile.tell()
+                break
+
+        if "ENCDG" in header:
+            assert header["ENCDG"] == "BINARY" or "BIN"
+            header["ENCDG"] = "BINARY"  # convert to consistent value
+
+        # read data as numpy array
+        header["data"] = _read_data(isf_file, ifile, currentposition, header)
+
+    return header
+
+
+def _read_chunk(headerfile, delimiter):
+    """
+    Reads one chunk of header data. Based on delimiter, this may be a tag
+    (ended by " ") or the value of a tag (ended by ";").
+    """
+    prior_delimiter = None
+    chunk = []
+    while True:
+        c = headerfile.read(1)
+        c = c.decode("ascii")
+        if c != delimiter:
+            chunk.append(c)
+            if c == '"':
+                # switch delimiter to make sure to parse the whole string
+                # enclosed in '"'.
+                delimiter, prior_delimiter = c, delimiter
+        elif prior_delimiter:
+            # switch back delimiter
+            chunk.append(c)
+            delimiter, prior_delimiter = prior_delimiter, None
+        else:
+            return "".join(chunk)
+
+def _read_data( isf_file, bfile, position, header):
+    """
+    Reads in the binary data as numpy array.
+    Apparently, there are only 1d-signals stored in .isf files, so a 1d-array
+    is read.
+    """
+    # determine the datatype from header tags
+    if header["BYT_OR"] == "MSB": datatype = ">" 
+    else: datatype = "<"
+    #datatype = ">" if header["BYT_OR"] == "MSB" else "<"
+    if header["BN_FMT"] == "RI":
+        datatype += "i"
+    else:
+        datatype += "u"
+    # BYT_NR might be present with preceding header ":WFMPRE:BYT_NR"
+    nobytes = header.get("BYT_NR",
+                         header.get(":WFMPRE:BYT_NR", "")
+                        )
+    datatype += nobytes
+    assert len(datatype) >= 3
+
+    bfile.seek(position)
+    #data = np.fromfile(bfile, datatype)
+    if ( datatype[0]=='i' ):
+        data= getDataSet( 'vap+bin:%s?type=short&byteOffset=%s' % ( isf_file, position ) )
+    else:
+        data= getDataSet( 'vap+bin:%s?type=ushort&byteOffset=%s' % ( isf_file, position ) )
+    #assert data.size == int(header["NR_PT"])
+
+    # calculate true values
+    #data = data * float(header["YMULT"]) + float(header["YZERO"])
+    # matches Tek ifsread.exe CSV output
+    yzero = float(header["YZERO"])
+    yoff = float(header["YOFF"])
+    ymult = float(header["YMULT"])
+    data = yzero + ymult * (data - yoff)
+    print header["XZERO"], type( header["XZERO"] )
+    print header["XUNIT"]
+    print header["XINCR"]
+    
+    from org.das2.qds import TagGenDataSet
+    su= header["XUNIT"]
+    if ( su.startswith('"') and su.endswith('"') ):
+        su= su[1:-1]
+    tt= TagGenDataSet( data.length(), float(header["XINCR"]), float(header["XZERO"]), Units.lookupUnits( su ) )
+    data= link( tt, data )
+    
+    return data
+
+ff= getFile(resourceURI,monitor)
+
+header = parse_curve( str(ff) )
+
+result= header['data']
