@@ -2,7 +2,7 @@ import sys
 import os.path
 import re
 
-resourceURI= getParam( 'resourceURI', '/home/jbf/project/juice/u/zach/20190115/tek0000CH1.isf', 'Techtronix isf file' )
+resourceURI= getParam( 'resourceURI', 'http://www-pw.physics.uiowa.edu/~jbf/autoplot/jyds/formats/techtronix/tek0000CH1.isf', 'Techtronix isf file' )
 
 # WFMPRE:NR_PT 1000 is absent
 # WFMOUTPRE:BYT_NR 1 or WFMO:BYT_N 1 from socket instead of
